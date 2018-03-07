@@ -200,7 +200,7 @@ curl -i -X GET \
     --header "apikey: ENTER_KEY_HERE"
 ```
 
-次の結果が返ってきて、
+次の結果が返ってきて、無事アクセスできたことが分かります。
 
 ```bash
 HTTP/1.1 200 OK
