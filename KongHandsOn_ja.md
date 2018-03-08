@@ -65,11 +65,11 @@ docker run -d --name kong \
 $ curl -i http://localhost:8001/
 ```
 
-> これ以降もポートは適宜読み替えてください。
+> こちらで用意したコンテナを使用する場合は、実行時に表示されるコンテナ名とポート番号をメモしておいてください。これ以降もポートは適宜読み替えてください。
 
 ## API の追加と確認
 
-では実際に API を追加します。
+では実際に API を追加します。API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートで、API 操作のエンドポイントは `/apis/` となります。
 
 ```bash
 curl -i -X POST \
@@ -81,13 +81,16 @@ curl -i -X POST \
 
 `HTTP/1.1 201 Created` の JSON が返ってくれば成功です。
 
+`name` が作成した API の名前（一意である必要があります）、`uris` がエンドポイント、`upstream_url` が管理する（転送する）API のエンドポイントです。今回は [httpbin](http://httpbin.org) を使用します。
 
-アクセスして確かめてみます。
+
+アクセスして確かめてみます。動作しているユーザー向けポートはデフォルトでは `8000` で、先ほど作成した `uris` の `/test/` が httpbin が転送されているエンドポイントです。
 
 ```bash
 curl -i -X GET \
     --url http://localhost:8000/test/get?data=value
 ```
+
 
 次のような JSON が返ってきて、正しく転送されていることがわかります。
 
@@ -236,37 +239,91 @@ X-Kong-Proxy-Latency: 26
 }
 ```
 
+## おまけ：レートリミット
 
-これで今回のハンズオンは終了です。お疲れ様でした。
+時間に余裕があれば、Rate Limit を掛けてみましょう。
+
+Plugin 名は `rate-limiting` で今回は秒単位で 2回、分単位で 10回の制限を掛けてみます。
 
 
-## その他資料
+```bash
+curl -i -X POST \
+    --url http://localhost:8001/apis/test/plugins \
+    --data "name=rate-limiting" \
+    --data "config.second=1" \
+    --data "config.minute=5"
+```
+
+
+エンドポイントにアクセスしてみます。
+
+
+```bash
+curl -i -X GET \
+    --url http://localhost:8000/test/get?data=value1&data=value2
+```
+
+例えば 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 2回アクセスできることが分かります。
+
+```bash
+HTTP/1.1 429 
+Date: Thu, 08 Mar 2018 07:06:06 GMT
+Content-Type: application/json; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-RateLimit-Limit-second: 1
+X-RateLimit-Remaining-second: 0
+X-RateLimit-Limit-minute: 5
+X-RateLimit-Remaining-minute: 2
+Server: kong/0.12.2
+
+{"message":"API rate limit exceeded"}
+```
+
+`consumer_id` などと組み合わせることで柔軟な制限を指定できます。
+
+いかがでしたでしょうか！？これで今回のハンズオンは終了です。お疲れ様でした。
+
+
+## 参考資料
 
 本日一部使用した Kong の Admin API の一覧は
 
 [Admin API \- v0\.12\.x \| Kong \- Open\-Source API Management and Microservice Management](https://getkong.org/docs/0.12.x/admin-api/)
 
-をご覧ください。
+に記載されています。
 
-例えば、作成された API 一覧は次のコマンド
+例えば、以下のようなコマンドが用意されています。
+
+**作成された API 一覧**
 
 ```bash
 curl -i -X GET \
     --url http://localhost:8001/apis/
 ```
 
-作成した API の削除は次のコマンド
+**作成した API の削除**
 
 ```bash
 curl -i -X DELETE \
-    --url http://localhost:8001/apis/{name or id}
+    --url http://localhost:8001/apis/{API}
+```
+
+**Plugin の変更**
+
+```bash
+curl -i -X PATCH \
+    --url http://localhost:8001/apis/{API}/plugins/{id} \
+    --data "config.{property}"
 ```
 
 などです。非常に簡単に操作できる API Management の Kong をぜひ触ってみてください。Kong についての詳細は
 
 - [Kong 本家](https://konghq.com/kong-community-edition/)
-- [エクセルソフト Kong ページ](https://www.xlsoft.com/jp/products/kong/index.html)
-- [エクセルソフトブログ Kong タグ](http://www.xlsoft.com/jp/blog/blog/tag/kong/)
+- [エクセルソフト Kong ページ](https://www.xlsoft.com/jp/products/kong/index.html?r=ytgh)
+- [エクセルソフトブログ Kong タグ](http://www.xlsoft.com/jp/blog/blog/tag/kong/?r=ytgh)
+
+をご覧ください。
 
 以上です。
 
