@@ -62,7 +62,7 @@ docker run -d --name kong \
 起動を確認します。
 
 ```bash
-$ curl -i http://localhost:8001/
+curl -i http://localhost:8001/
 ```
 
 > こちらで用意したコンテナを使用する場合は、実行時に表示されるコンテナ名とポート番号をメモしておいてください。これ以降もポートは適宜読み替えてください。
@@ -108,7 +108,7 @@ X-Kong-Proxy-Latency: 41
 X-Kong-Upstream-Latency: 355
 X-Powered-By: Flask
 X-Processed-Time: 0.000751972198486
- 
+
 {
   "args": {
   "data": "value"
@@ -266,7 +266,7 @@ curl -i -X GET \
 例えば 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 2回アクセスできることが分かります。
 
 ```bash
-HTTP/1.1 429 
+HTTP/1.1 429
 Date: Thu, 08 Mar 2018 07:06:06 GMT
 Content-Type: application/json; charset=utf-8
 Transfer-Encoding: chunked
@@ -295,21 +295,21 @@ Server: kong/0.12.2
 
 例えば、以下のようなコマンドが用意されています。
 
-**作成された API 一覧**
+### 作成された API 一覧
 
 ```bash
 curl -i -X GET \
     --url http://localhost:8001/apis/
 ```
 
-**作成した API の削除**
+### 作成した API の削除
 
 ```bash
 curl -i -X DELETE \
     --url http://localhost:8001/apis/{API}
 ```
 
-**Plugin の変更**
+### Plugin の変更
 
 ```bash
 curl -i -X PATCH \
