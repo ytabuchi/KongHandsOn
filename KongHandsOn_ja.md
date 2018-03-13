@@ -69,7 +69,7 @@ curl -i http://localhost:8001/
 
 ## API の追加と確認
 
-では実際に API を追加します。API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートで、API 操作のエンドポイントは `/apis/` となります。
+では実際に API を追加します。API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートで、API 操作のエンドポイントは `/apis/` です。
 
 ```bash
 curl -i -X POST \
@@ -78,6 +78,13 @@ curl -i -X POST \
     --data 'uris=/test' \
     --data 'upstream_url=http://httpbin.org'
 ```
+
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/apis/ --data 'name=test' --data 'uris=/test' --data 'upstream_url=http://httpbin.org'
+```
+
 
 `HTTP/1.1 201 Created` の JSON が返ってくれば成功です。
 
@@ -89,6 +96,12 @@ curl -i -X POST \
 ```bash
 curl -i -X GET \
     --url http://localhost:8000/test/get?data=value
+```
+
+1行バージョン：
+
+```bash
+curl -i -X GET --url http://localhost:8000/test/get?data=value
 ```
 
 
@@ -136,6 +149,12 @@ curl -i -X POST \
     --data 'name=key-auth'
 ```
 
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/apis/test/plugins/ --data 'name=key-auth'
+```
+
 > `/test/plugins/` として、API 別に Plugin を追加することも可能ですし、グローバルに追加することも可能です。
 
 
@@ -144,6 +163,12 @@ curl -i -X POST \
 ```bash
 curl -i -X GET \
     --url http://localhost:8000/test/get?data=value
+```
+
+1行バージョン：
+
+```bash
+curl -i -X GET --url http://localhost:8000/test/get?data=value
 ```
 
 今度は以下のように認証エラーが返ってきました。
@@ -171,6 +196,12 @@ curl -i -X POST \
     --data "username=Jason"
 ```
 
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/consumers/ --data "username=Jason"
+```
+
 Jason さんが追加されました。
 
 ```bash
@@ -193,6 +224,12 @@ curl -i -X POST \
     --data 'key=ENTER_KEY_HERE'
 ```
 
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data 'key=ENTER_KEY_HERE'
+```
+
 これで、この APIKEY で最初の API にアクセスできるようになりました。
 
 再度アクセスしてみます。
@@ -202,6 +239,13 @@ curl -i -X GET \
     --url http://localhost:8000/test/get?data=value \
     --header "apikey: ENTER_KEY_HERE"
 ```
+
+1行バージョン：
+
+```bash
+curl -i -X GET --url http://localhost:8000/test/get?data=value --header "apikey: ENTER_KEY_HERE"
+```
+
 
 次の結果が返ってきて、無事アクセスできたことが分かります。
 
@@ -245,7 +289,6 @@ X-Kong-Proxy-Latency: 26
 
 Plugin 名は `rate-limiting` で今回は秒単位で 1回、分単位で 5回の制限を掛けてみます。
 
-
 ```bash
 curl -i -X POST \
     --url http://localhost:8001/apis/test/plugins \
@@ -254,13 +297,24 @@ curl -i -X POST \
     --data "config.minute=5"
 ```
 
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/apis/test/plugins --data "name=rate-limiting" --data "config.second=1" --data "config.minute=5"
+```
+
 
 エンドポイントにアクセスします。1 秒以内に 2回、または 1分以内に 6回アクセスすると拒否されるはずですので、以下のコマンドを 2行分一気に貼り付けたりしてみましょう。
-
 
 ```bash
 curl -i -X GET \
     --url http://localhost:8000/test/get?data=value1&data=value2
+```
+
+1行バージョン：
+
+```bash
+curl -i -X GET --url http://localhost:8000/test/get?data=value1&data=value2
 ```
 
 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 2回アクセスできることが分かります。
@@ -326,7 +380,3 @@ curl -i -X PATCH \
 をご覧ください。
 
 以上です。
-
-
-
-
