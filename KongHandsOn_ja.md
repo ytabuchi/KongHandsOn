@@ -308,13 +308,14 @@ curl -i -X POST --url http://localhost:8001/apis/test/plugins --data "name=rate-
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/test/get?data=value1&data=value2
+    --url "http://localhost:8000/test/get?data=value1&data=value2" \
+    --header "apikey: ENTER_KEY_HERE"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/test/get?data=value1&data=value2
+curl -i -X GET --url "http://localhost:8000/test/get?data=value1&data=value2" --header "apikey: ENTER_KEY_HERE"
 ```
 
 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 2回アクセスできることが分かります。
