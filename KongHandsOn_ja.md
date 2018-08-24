@@ -6,7 +6,7 @@
 
 ハンズオンでは、Kong の Docker イメージ（Linux）を使用します。また、Kong へのアクセスに `Curl` または [Postman](https://www.getpostman.com/) を使用します。
 
-- Docker が動作する環境（お持ちでない場合は Docker が動作している環境を用意してありますので、お知らせください）
+- Docker が動作する環境
 - Linux にリモートログインする SSH クライアント
     - Windows の方は [TeraTerm](https://ttssh2.osdn.jp/)／[PuTTY](https://www.putty.org/)／[Poderosa](http://ja.poderosa-terminal.com/)／[rlogin](http://nanno.dip.jp/softlib/man/rlogin/) などをご用意ください。
 - POST できる TCP クライアントツール
@@ -17,21 +17,28 @@
 
 ## インストール
 
-まずは Postgres のデータベースを起動します。Docker 環境にログインし、以下を実行します。
+最初にコンテナ同士が発見や通信ができるようにカスタムネットワークをを作ります。Docker 環境で以下を実行します。
+
+```bash
+docker network create kong-net
+```
+
+次に Postgres のデータベースを起動します。
 
 ```bash
 docker run -d --name kong-database \
-    -p 5432:5432 \
-    -e "POSTGRES_USER=kong" \
-    -e "POSTGRES_DB=kong" \
-    postgres:9.4
+              --network=kong-net \
+              -p 5432:5432 \
+              -e "POSTGRES_USER=kong" \
+              -e "POSTGRES_DB=kong" \
+              postgres:9.6
 ```
 
 次にデータベースを用意します。`KONG_DATABASE` の環境変数で利用しているデータベース（Casandora と Postgres があり、今回は Postgres を使用しています）を指定します。
 
 ```bash
 docker run --rm \
-    --link kong-database:kong-database \
+    --network=kong-net \
     -e "KONG_DATABASE=postgres" \
     -e "KONG_PG_HOST=kong-database" \
     -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
@@ -42,7 +49,7 @@ docker run --rm \
 
 ```bash
 docker run -d --name kong \
-    --link kong-database:kong-database \
+    --network=kong-net \
     -e "KONG_DATABASE=postgres" \
     -e "KONG_PG_HOST=kong-database" \
     -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
@@ -50,8 +57,7 @@ docker run -d --name kong \
     -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
     -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
     -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
-    -e "KONG_ADMIN_LISTEN=0.0.0.0:8001" \
-    -e "KONG_ADMIN_LISTEN_SSL=0.0.0.0:8444" \
+    -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
     -p 8000:8000 \
     -p 8443:8443 \
     -p 8001:8001 \
@@ -65,7 +71,6 @@ docker run -d --name kong \
 curl -i http://localhost:8001/
 ```
 
-> こちらで用意したコンテナを使用する場合は、実行時に表示されるコンテナ名とポート番号をメモしておいてください。これ以降もポートは適宜読み替えてください。
 
 ## API の追加と確認
 
@@ -133,7 +138,7 @@ X-Processed-Time: 0.000751972198486
   "Host": "httpbin.org",
   "User-Agent": "HTTPie/0.9.2"
   },
-  "origin": "172.17.0.1, XXX.XXX.XXX.XXX",
+  "origin": "172.18.0.1, XXX.XXX.XXX.XXX",
   "url": "http://httpbin.org/get?data=value"
 }
 ```
@@ -219,20 +224,23 @@ Connection: keep-alive
 そのまま Jason に対して `API Key` を発行します。
 
 ```bash
-curl -i -X POST \
-    --url http://localhost:8001/consumers/Jason/key-auth/ \
-    --data 'key=ENTER_KEY_HERE'
+curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ -d ''
 ```
 
-1行バージョン：
+次のような json が返ってきて、`id` と `key` が発行されたことがわかります。
 
-```bash
-curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data 'key=ENTER_KEY_HERE'
+```JSON
+{
+    "consumer_id": "876bf719-8f18-4ce5-cc9f-5b5af6c36007",
+    "created_at": 1443371053000,
+    "id": "62a7d3b7-b995-49f9-c9c8-bac4d781fb59",
+    "key": "62eb165c070a41d5c1b58d9d3d725ca1"
+}
 ```
 
 これで、この APIKEY で最初の API にアクセスできるようになりました。
 
-再度アクセスしてみます。
+再度アクセスしてみます。`ENTER_KEY_HERE` を発行された `key` で置き換えてください。
 
 ```bash
 curl -i -X GET \
