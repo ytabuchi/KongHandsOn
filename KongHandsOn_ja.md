@@ -1,6 +1,10 @@
 # Kong ハンズオンドキュメント
 
-このドキュメントでは [Kong 公式のドキュメント](https://getkong.org/docs/) に沿って [Kong Community Edition（以下 Kong）](https://konghq.com/kong-community-edition/) のハンズオンを行います。
+> Updated on 2019/02/12
+
+ようこそ！
+
+このドキュメントでは [Kong の公式ドキュメント](https://docs.konghq.com/) に沿って [Kong（旧 Kong Community Edition／以下 Kong）](https://konghq.com/kong/) のハンズオンを行います。
 
 ## 事前準備
 
@@ -9,8 +13,9 @@
 - Docker が動作する環境
 - Linux にリモートログインする SSH クライアント
     - Windows の方は [TeraTerm](https://ttssh2.osdn.jp/)／[PuTTY](https://www.putty.org/)／[Poderosa](http://ja.poderosa-terminal.com/)／[rlogin](http://nanno.dip.jp/softlib/man/rlogin/) などをご用意ください。
+    - macOS／Linux の方は標準のターミナルをご利用ください。
 - POST できる TCP クライアントツール
-    - Windows の方は [Postman](https://www.getpostman.com/apps) が良いでしょう。
+    - Windows の方は [Postman](https://www.getpostman.com/apps) が良いでしょう。どうしてもコマンドで操作したい方は、PowerShell 3.0 以上で使える [`Invoke-WebRequest`](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-6) コマンドが `Curl` に似た動きをするので使ってみても良いかもしれません。
     - macOS／Linux の方は Curl が標準でインストールされています。必要に応じて Postman を使用してください。
 
 
@@ -34,6 +39,12 @@ docker run -d --name kong-database \
               postgres:9.6
 ```
 
+1行バージョン：
+
+```bash
+docker run -d --name kong-database --network=kong-net -p 5432:5432 -e "POSTGRES_USER=kong" -e "POSTGRES_DB=kong" postgres:9.6
+```
+
 次にデータベースを用意します。`KONG_DATABASE` の環境変数で利用しているデータベース（Casandora と Postgres があり、今回は Postgres を使用しています）を指定します。
 
 ```bash
@@ -45,7 +56,22 @@ docker run --rm \
     kong:latest kong migrations up
 ```
 
-`XX migrations ran` というようなメッセージが表示され、データベースの準備ができます。準備が完了したら、Kong のコンテナを起動します。
+1行バージョン：
+
+```bash
+docker run --rm --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" kong:latest kong migrations up
+```
+
+
+以下のようなメッセージが表示され、データベースの準備ができます。
+
+```bash
+XX migrations processed
+XX executed
+database is up-to-date
+```
+
+準備が完了したら、Kong のコンテナを起動します。
 
 ```bash
 docker run -d --name kong \
@@ -65,6 +91,12 @@ docker run -d --name kong \
     kong:latest
 ```
 
+1行バージョン：
+
+```bash
+docker run -d --name kong --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" -e "KONG_PROXY_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" -p 8000:8000 -p 8443:8443 -p 8001:8001 -p 8444:8444 kong:latest
+```
+
 起動を確認します。
 
 ```bash
@@ -72,76 +104,205 @@ curl -i http://localhost:8001/
 ```
 
 
+
+
+
 ## API の追加と確認
 
-では実際に API を追加します。API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートで、API 操作のエンドポイントは `/apis/` です。
+API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートです。
+
+> このドキュメントでは主に Curl を使用していますが、Postman のリクエストのコレクションを
+> 
+> https://www.getpostman.com/collections/1fe9e174fb3d7bc7537d
+> 
+> で公開しています。Postman を使っている方はメニューの「Import＞Import from Link」から上記 URL を読み込むとコレクションを取得できます。
+
+
+最初に Service を追加します。
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/apis/ \
-    --data 'name=test' \
-    --data 'uris=/test' \
-    --data 'upstream_url=http://httpbin.org'
+    --url http://localhost:8001/services/ \
+    --data 'name=example-service' \
+    --data 'url=http://httpbin.org'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/apis/ --data 'name=test' --data 'uris=/test' --data 'upstream_url=http://httpbin.org'
+curl -i -X POST --url http://localhost:8001/services/ --data 'name=example-service' --data 'url=http://httpbin.org'
 ```
 
 
-`HTTP/1.1 201 Created` の JSON が返ってくれば成功です。
+以下のようなレスポンスが返ってくれば成功です。
 
-`name` が作成した API の名前（一意である必要があります）、`uris` がエンドポイント、`upstream_url` が管理する（転送する）API のエンドポイントです。今回は [httpbin](http://httpbin.org) を使用します。
+```bash
+HTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 258
+Content-Type: application/json; charset=utf-8
+Date: Tue, 12 Feb 2019 01:24:35 GMT
+Server: kong/1.0.2
+
+{
+    "connect_timeout": 60000,
+    "created_at": 1549934675,
+    "host": "httpbin.org",
+    "id": "f535ce6b-28af-4d17-b9a1-ce0ef41ee8ea",
+    "name": "example-service",
+    "path": null,
+    "port": 80,
+    "protocol": "http",
+    "read_timeout": 60000,
+    "retries": 5,
+    "updated_at": 1549934675,
+    "write_timeout": 60000
+}
+```
 
 
-アクセスして確かめてみます。動作しているユーザー向けポートはデフォルトでは `8000` で、先ほど作成した `uris` の `/test/` が httpbin が転送されているエンドポイントです。
+POST データに含める `name` が作成した Service の名前（一意である必要があります）で、`url` が転送先の API のエンドポイントです。今回は [httpbin](http://httpbin.org) を使用します。
+
+次に作成したサービスにルートを追加します。
+
+```bash
+curl -i -X POST \
+    --url http://localhost:8001/services/example-service/routes \
+    --data 'hosts[]=example.com&hosts[]=foo.bar'
+```
+
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/services/example-service/routes --data 'hosts[]=example.com&hosts[]=foo.bar'
+```
+
+
+次のようなレスポンスが返ってくれば成功です。
+
+```bash
+HTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 358
+Content-Type: application/json; charset=utf-8
+Date: Tue, 12 Feb 2019 05:57:25 GMT
+Server: kong/1.0.2
+
+{
+    "created_at": 1549951045,
+    "destinations": null,
+    "hosts": [
+        "example.com",
+        "foo.bar"
+    ],
+    "id": "8b11b596-4f7c-4e62-a6fb-bfad52c56351",
+    "methods": null,
+    "name": null,
+    "paths": null,
+    "preserve_host": false,
+    "protocols": [
+        "http",
+        "https"
+    ],
+    "regex_priority": 0,
+    "service": {
+        "id": "e96f86d5-fe53-4385-a4bc-77235663535f"
+    },
+    "snis": null,
+    "sources": null,
+    "strip_path": true,
+    "updated_at": 1549951045
+}
+```
+
+Routes は指定した Host がリクエストヘッダーにあった場合に、紐付けた Service の返信を返す設定を行います。
+
+アクセスして確かめてみます。動作しているユーザー向けポートはデフォルトでは `8000` で、先ほど作成した Route では `example.com` のヘッダーを受け付けるので、次の
+
+
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/test/get?data=value
+    --url http://localhost:8000/get?data=value \
+    --header 'Host: example.com'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/test/get?data=value
+curl -i -X GET --url http://localhost:8000/get?data=value --header 'Host: example.com'
 ```
 
-
-次のような JSON が返ってきて、正しく転送されていることがわかります。
+次のようなレスポンスが返ってきて、正しく転送されていることがわかります。
 
 ```bash
 HTTP/1.1 200 OK
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Origin: *
-Connection: keep-alive
-Content-Length: 303
 Content-Type: application/json
-Date: Fri, 09 Jun 2017 09:02:59 GMT
-Server: meinheld/0.6.1
-Via: kong/0.10.3
-X-Kong-Proxy-Latency: 41
-X-Kong-Upstream-Latency: 355
-X-Powered-By: Flask
-X-Processed-Time: 0.000751972198486
+Content-Length: 301
+Connection: keep-alive
+Server: gunicorn/19.9.0
+Date: Tue, 12 Feb 2019 06:01:31 GMT
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Via: kong/1.0.2
+X-Kong-Upstream-Latency: 395
+X-Kong-Proxy-Latency: 26
 
 {
   "args": {
-  "data": "value"
+    "data": "value"
   },
   "headers": {
-  "Accept": "*/*",
-  "Accept-Encoding": "gzip, deflate",
-  "Connection": "close",
-  "Host": "httpbin.org",
-  "User-Agent": "HTTPie/0.9.2"
+    "Accept": "*/*",
+    "Connection": "close",
+    "Host": "httpbin.org",
+    "User-Agent": "curl/7.54.0",
+    "X-Forwarded-Host": "example.com"
   },
-  "origin": "172.18.0.1, XXX.XXX.XXX.XXX",
-  "url": "http://httpbin.org/get?data=value"
+  "origin": "172.18.0.1, 219.106.251.57",
+  "url": "http://example.com/get?data=value"
 }
 ```
+
+ここでは、url が `example.com` になっていることに注目しましょう。
+
+### Power Shell ユーザー向け TIPS
+
+Windows で Power Shell を使う方は、curl と同じような `Invoke-WebRequest` というメソッドが用意されています。例えば
+
+```powershell
+Invoke-WebRequest -uri "http://localhost:8001/services"
+```
+
+でレスポンスのオブジェクトを取れるので、ドットシンタックスでオブジェクトの内部の値を確認したり、上記の戻り値を変数に格納して確認したりできます。（`iwr` は `Invoke-WebRequest` のエイリアスです。）
+
+**ヘッダーを表示**
+
+```powershell
+(iwr -uri "http://localhost:8001/services").Headers
+```
+
+**Response を取得して Content を表示**
+
+```powershell
+$response = iwr -uri "http://localhost:8001/services"
+$response.Content
+```
+
+また、Service を追加する時は
+
+```powershell
+$response = iwr -method post -uri "http://localhost:8001/services" -body 'name=example-service&url=http://httpbin.org'
+$response.statuscode
+```
+
+とすると、成功していれば StatusCode として 201 が返ってきているのが取得できます。
+
+`Invoke-WebRequest` については、[Microsoft の公式ページ](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-6)に結構詳しくパラメーターや使い方が載っていますので、興味のある方は見てみてください。
+
+
 
 
 ## Plugin で認証機能を追加
@@ -150,30 +311,66 @@ X-Processed-Time: 0.000751972198486
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/apis/test/plugins/ \
+    --url http://localhost:8001/services/example-service/plugins/ \
     --data 'name=key-auth'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/apis/test/plugins/ --data 'name=key-auth'
+curl -i -X POST --url http://localhost:8001/services/example-service/plugins/ --data 'name=key-auth'
 ```
 
 > `/test/plugins/` として、API 別に Plugin を追加することも可能ですし、グローバルに追加することも可能です。
+
+次のようなレスポンスが返ってくれば成功です。
+
+```bash
+HTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 324
+Content-Type: application/json; charset=utf-8
+Date: Tue, 12 Feb 2019 08:24:17 GMT
+Server: kong/1.0.2
+
+{
+    "config": {
+        "anonymous": null,
+        "hide_credentials": false,
+        "key_in_body": false,
+        "key_names": [
+            "apikey"
+        ],
+        "run_on_preflight": true
+    },
+    "consumer": null,
+    "created_at": 1549959857,
+    "enabled": true,
+    "id": "c4a75dff-ea1c-4d52-886e-65d3daf52dd8",
+    "name": "key-auth",
+    "route": null,
+    "run_on": "first",
+    "service": {
+        "id": "f535ce6b-28af-4d17-b9a1-ce0ef41ee8ea"
+    }
+}
+```
+
 
 
 もう一度、同じ API にアクセスしてみます。
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/test/get?data=value
+    --url http://localhost:8000/get?data=value \
+    --header 'Host: example.com'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/test/get?data=value
+curl -i -X GET --url http://localhost:8000/get?data=value --header 'Host: example.com'
 ```
 
 今度は以下のように認証エラーが返ってきました。
@@ -182,10 +379,10 @@ curl -i -X GET --url http://localhost:8000/test/get?data=value
 ```bash
 HTTP/1.1 401 Unauthorized
 Connection: keep-alive
+Content-Length: 41
 Content-Type: application/json; charset=utf-8
-Date: Wed, 07 Mar 2018 11:50:04 GMT
-Server: kong/0.12.2
-Transfer-Encoding: chunked
+Date: Tue, 12 Feb 2019 08:27:27 GMT
+Server: kong/1.0.2
 WWW-Authenticate: Key realm="kong"
 
 {
@@ -210,48 +407,72 @@ curl -i -X POST --url http://localhost:8001/consumers/ --data "username=Jason"
 Jason さんが追加されました。
 
 ```bash
-HTTP/1.1 201 Created
-Content-Type: application/json
+HHTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
 Connection: keep-alive
+Content-Length: 105
+Content-Type: application/json; charset=utf-8
+Date: Tue, 12 Feb 2019 08:29:10 GMT
+Server: kong/1.0.2
 
 {
-  "username": "Jason",
-  "created_at": 1428555626000,
-  "id": "bbdf1c48-19dc-4ab7-cae0-ff4f59d87dc9"
+    "created_at": 1549960150,
+    "custom_id": null,
+    "id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf",
+    "username": "Jason"
 }
 ```
 
 そのまま Jason に対して `API Key` を発行します。
 
 ```bash
-curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ -d ''
+curl -i -X POST \
+  --url http://localhost:8001/consumers/Jason/key-auth/ \
+  --data 'key=ENTER_KEY_HERE'
+```
+
+1行バージョン：
+
+```bash
+curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data 'key=ENTER_KEY_HERE'
 ```
 
 次のような json が返ってきて、`id` と `key` が発行されたことがわかります。
 
-```JSON
+```bash
+HTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 149
+Content-Type: application/json; charset=utf-8
+Date: Tue, 12 Feb 2019 08:30:54 GMT
+Server: kong/1.0.2
+
 {
-    "consumer_id": "876bf719-8f18-4ce5-cc9f-5b5af6c36007",
-    "created_at": 1443371053000,
-    "id": "62a7d3b7-b995-49f9-c9c8-bac4d781fb59",
-    "key": "62eb165c070a41d5c1b58d9d3d725ca1"
+    "consumer": {
+        "id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf"
+    },
+    "created_at": 1549960254,
+    "id": "7038231a-b5a8-4a0c-b77a-903884219e49",
+    "key": "ENTER_KEY_HERE"
 }
 ```
 
-これで、この APIKEY で最初の API にアクセスできるようになりました。
+これで、この apikey で最初の API にアクセスできるようになりました。
 
-再度アクセスしてみます。`ENTER_KEY_HERE` を発行された `key` で置き換えてください。
+> key をランダム生成する場合は、`--data ''` と、実データなしでリクエストを送ります。
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/test/get?data=value \
+    --url http://localhost:8000/get?data=value \
+    --header "Host: example.com" \
     --header "apikey: ENTER_KEY_HERE"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/test/get?data=value --header "apikey: ENTER_KEY_HERE"
+curl -i -X GET --url http://localhost:8000/get?data=value --header "Host: example.com" --header "apikey: ENTER_KEY_HERE"
 ```
 
 
@@ -259,39 +480,44 @@ curl -i -X GET --url http://localhost:8000/test/get?data=value --header "apikey:
 
 ```bash
 HTTP/1.1 200 OK
-Content-Type: application/json
-Content-Length: 440
-Connection: keep-alive
-Server: meinheld/0.6.1
-Date: Wed, 07 Mar 2018 12:29:18 GMT
-Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
-X-Powered-By: Flask
-X-Processed-Time: 0
-Via: kong/0.12.2
-X-Kong-Upstream-Latency: 157
-X-Kong-Proxy-Latency: 26
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 475
+Content-Type: application/json
+Date: Tue, 12 Feb 2019 08:33:04 GMT
+Server: gunicorn/19.9.0
+Via: kong/1.0.2
+X-Kong-Proxy-Latency: 20
+X-Kong-Upstream-Latency: 427
 
 {
-  "args": {
-    "data": "value"
-  },
-  "headers": {
-    "Accept": "*/*",
-    "Apikey": "ENTER_KEY_HERE", # <- Apikey のヘッダー
-    "Connection": "close",
-    "Host": "httpbin.org",
-    "User-Agent": "curl/7.54.0",
-    "X-Consumer-Id": "0eb28a3c-4c43-4dd8-9471-ea3005ec72fb",
-    "X-Consumer-Username": "Jason", # <- Consumer のヘッダー
-    "X-Forwarded-Host": "XXX.XXX.XXX.XXX"
-  },
-  "origin": "XXX.XXX.XXX.XXX, XXX.XXX.XXX.XXX",
-  "url": "http://localhost/get?data=value"
+    "args": {
+        "data": "value"
+    },
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate",
+        "Apikey": "ENTER_KEY_HERE",
+        "Connection": "close",
+        "Host": "httpbin.org",
+        "User-Agent": "HTTPie/1.0.2",
+        "X-Consumer-Id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf",
+        "X-Consumer-Username": "Jason",
+        "X-Forwarded-Host": "example.com"
+    },
+    "origin": "172.18.0.1, 219.106.251.57",
+    "url": "http://example.com/get?data=value"
 }
 ```
 
-## おまけ：レートリミット
+Key-Auth プラグインの詳細は、[公式ドキュメント](https://docs.konghq.com/hub/kong-inc/key-auth/)をご覧ください。
+
+
+
+
+
+## おまけ：レートリミット（まだアップデートしていません。すみません。）
 
 時間に余裕があれば、Rate Limit を掛けてみましょう。
 
@@ -299,7 +525,7 @@ Plugin 名は `rate-limiting` で今回は秒単位で 1回、分単位で 5回�
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/apis/test/plugins \
+    --url http://localhost:8001/services/test/plugins \
     --data "name=rate-limiting" \
     --data "config.second=1" \
     --data "config.minute=5"
@@ -308,7 +534,7 @@ curl -i -X POST \
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/apis/test/plugins --data "name=rate-limiting" --data "config.second=1" --data "config.minute=5"
+curl -i -X POST --url http://localhost:8001/services/test/plugins --data "name=rate-limiting" --data "config.second=1" --data "config.minute=5"
 ```
 
 
@@ -362,21 +588,21 @@ Server: kong/0.12.2
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8001/apis/
+    --url http://localhost:8001/services/
 ```
 
 ### 作成した API の削除
 
 ```bash
 curl -i -X DELETE \
-    --url http://localhost:8001/apis/{API}
+    --url http://localhost:8001/services/{API}
 ```
 
 ### Plugin の変更
 
 ```bash
 curl -i -X PATCH \
-    --url http://localhost:8001/apis/{API}/plugins/{id} \
+    --url http://localhost:8001/services/{API}/plugins/{id} \
     --data "config.{property}"
 ```
 
