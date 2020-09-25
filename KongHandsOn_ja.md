@@ -1,10 +1,10 @@
 # Kong ハンズオンドキュメント
 
-> Updated on 2019/02/12
+> Updated on 2020/9/25
 
 ようこそ！
 
-このドキュメントでは [Kong の公式ドキュメント](https://docs.konghq.com/) に沿って [Kong（旧 Kong Community Edition／以下 Kong）](https://konghq.com/kong/) のハンズオンを行います。
+このドキュメントでは [Kong の公式ドキュメント](https://docs.konghq.com/) に沿って [Kong Gateway（旧 Kong Community Edition／以下 Kong）](https://konghq.com/kong/) のハンズオンを行います。
 
 ## 事前準備
 
@@ -32,34 +32,37 @@ docker network create kong-net
 
 ```bash
 docker run -d --name kong-database \
-              --network=kong-net \
-              -p 5432:5432 \
-              -e "POSTGRES_USER=kong" \
-              -e "POSTGRES_DB=kong" \
-              postgres:9.6
+               --network=kong-net \
+               -p 5432:5432 \
+               -e "POSTGRES_USER=kong" \
+               -e "POSTGRES_DB=kong" \
+               -e "POSTGRES_PASSWORD=kong" \
+               postgres:9.6
 ```
 
 1行バージョン：
 
 ```bash
-docker run -d --name kong-database --network=kong-net -p 5432:5432 -e "POSTGRES_USER=kong" -e "POSTGRES_DB=kong" postgres:9.6
+docker run -d --name kong-database --network=kong-net -p 5432:5432 -e "POSTGRES_USER=kong" -e "POSTGRES_DB=kong" -e "POSTGRES_PASSWORD=kong" postgres:9.6
 ```
 
 次にデータベースを用意します。`KONG_DATABASE` の環境変数で利用しているデータベース（Casandora と Postgres があり、今回は Postgres を使用しています）を指定します。
 
 ```bash
 docker run --rm \
-    --network=kong-net \
-    -e "KONG_DATABASE=postgres" \
-    -e "KONG_PG_HOST=kong-database" \
-    -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
-    kong:latest kong migrations up
+     --network=kong-net \
+     -e "KONG_DATABASE=postgres" \
+     -e "KONG_PG_HOST=kong-database" \
+     -e "KONG_PG_USER=kong" \
+     -e "KONG_PG_PASSWORD=kong" \
+     -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
+     kong:latest kong migrations bootstrap
 ```
 
 1行バージョン：
 
 ```bash
-docker run --rm --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" kong:latest kong migrations up
+docker run --rm --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_PG_USER=kong" -e "KONG_PG_PASSWORD=kong" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" kong:latest kong migrations bootstrap
 ```
 
 
@@ -75,26 +78,28 @@ database is up-to-date
 
 ```bash
 docker run -d --name kong \
-    --network=kong-net \
-    -e "KONG_DATABASE=postgres" \
-    -e "KONG_PG_HOST=kong-database" \
-    -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
-    -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
-    -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
-    -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
-    -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
-    -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
-    -p 8000:8000 \
-    -p 8443:8443 \
-    -p 8001:8001 \
-    -p 8444:8444 \
-    kong:latest
+     --network=kong-net \
+     -e "KONG_DATABASE=postgres" \
+     -e "KONG_PG_HOST=kong-database" \
+     -e "KONG_PG_USER=kong" \
+     -e "KONG_PG_PASSWORD=kong" \
+     -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" \
+     -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+     -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+     -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+     -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
+     -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
+     -p 8000:8000 \
+     -p 8443:8443 \
+     -p 127.0.0.1:8001:8001 \
+     -p 127.0.0.1:8444:8444 \
+     kong:latest
 ```
 
 1行バージョン：
 
 ```bash
-docker run -d --name kong --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" -e "KONG_PROXY_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" -p 8000:8000 -p 8443:8443 -p 8001:8001 -p 8444:8444 kong:latest
+docker run -d --name kong --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_PG_USER=kong" -e "KONG_PG_PASSWORD=kong" -e "KONG_CASSANDRA_CONTACT_POINTS=kong-database" -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" -e "KONG_PROXY_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" -p 8000:8000 -p 8443:8443 -p 127.0.0.1:8001:8001 -p 127.0.0.1:8444:8444 kong:latest
 ```
 
 起動を確認します。
@@ -113,7 +118,7 @@ API の開発は、Admin API ポートの各種エンドポイントに POST／U
 
 > このドキュメントでは主に Curl を使用していますが、Postman のリクエストのコレクションを
 > 
-> https://www.getpostman.com/collections/1fe9e174fb3d7bc7537d
+> https://www.getpostman.com/collections/f4c17a70d4a43cd2e26f
 > 
 > で公開しています。Postman を使っている方はメニューの「Import＞Import from Link」から上記 URL を読み込むとコレクションを取得できます。
 
@@ -122,9 +127,9 @@ API の開発は、Admin API ポートの各種エンドポイントに POST／U
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/services/ \
-    --data 'name=example-service' \
-    --data 'url=http://httpbin.org'
+  --url http://localhost:8001/services/ \
+  --data 'name=example-service' \
+  --data 'url=http://mockbin.org'
 ```
 
 1行バージョン：
