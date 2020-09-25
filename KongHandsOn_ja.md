@@ -135,7 +135,7 @@ curl -i -X POST \
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/ --data 'name=example-service' --data 'url=http://httpbin.org'
+curl -i -X POST --url http://localhost:8001/services/ --data 'name=example-service' --data 'url=http://mockbin.org'
 ```
 
 
@@ -145,23 +145,29 @@ curl -i -X POST --url http://localhost:8001/services/ --data 'name=example-servi
 HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 258
+Content-Length: 361
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 01:24:35 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 08:34:09 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 5
 
 {
+    "ca_certificates": null,
+    "client_certificate": null,
     "connect_timeout": 60000,
-    "created_at": 1549934675,
-    "host": "httpbin.org",
-    "id": "f535ce6b-28af-4d17-b9a1-ce0ef41ee8ea",
+    "created_at": 1601022849,
+    "host": "mockbin.org",
+    "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab",
     "name": "example-service",
     "path": null,
     "port": 80,
     "protocol": "http",
     "read_timeout": 60000,
     "retries": 5,
-    "updated_at": 1549934675,
+    "tags": null,
+    "tls_verify": null,
+    "tls_verify_depth": null,
+    "updated_at": 1601022849,
     "write_timeout": 60000
 }
 ```
@@ -173,14 +179,14 @@ POST データに含める `name` が作成した Service の名前（一意で�
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/services/example-service/routes \
-    --data 'hosts[]=example.com&hosts[]=foo.bar'
+  --url http://localhost:8001/services/example-service/routes \
+  --data 'hosts[]=example.com'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/example-service/routes --data 'hosts[]=example.com&hosts[]=foo.bar'
+curl -i -X POST --url http://localhost:8001/services/example-service/routes --data 'hosts[]=example.com'
 ```
 
 
@@ -190,21 +196,24 @@ curl -i -X POST --url http://localhost:8001/services/example-service/routes --da
 HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 358
+Content-Length: 429
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 05:57:25 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 09:00:53 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 6
 
 {
-    "created_at": 1549951045,
+    "created_at": 1601024453,
     "destinations": null,
+    "headers": null,
     "hosts": [
-        "example.com",
-        "foo.bar"
+        "example.com"
     ],
-    "id": "8b11b596-4f7c-4e62-a6fb-bfad52c56351",
+    "https_redirect_status_code": 426,
+    "id": "be9ad0a3-2beb-4019-8deb-3686ee60d39c",
     "methods": null,
     "name": null,
+    "path_handling": "v0",
     "paths": null,
     "preserve_host": false,
     "protocols": [
@@ -213,12 +222,13 @@ Server: kong/1.0.2
     ],
     "regex_priority": 0,
     "service": {
-        "id": "e96f86d5-fe53-4385-a4bc-77235663535f"
+        "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab"
     },
     "snis": null,
     "sources": null,
     "strip_path": true,
-    "updated_at": 1549951045
+    "tags": null,
+    "updated_at": 1601024453
 }
 ```
 
@@ -228,48 +238,38 @@ Routes は指定した Host がリクエストヘッダーにあった場合に�
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/get?data=value \
-    --header 'Host: example.com'
+  --url http://localhost:8000/ \
+  --header 'Host: example.com'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/get?data=value --header 'Host: example.com'
+curl -i -X GET --url http://localhost:8000/ --header 'Host: example.com'
 ```
 
 次のようなレスポンスが返ってきて、正しく転送されていることがわかります。
 
 ```bash
 HTTP/1.1 200 OK
-Content-Type: application/json
-Content-Length: 301
 Connection: keep-alive
-Server: gunicorn/19.9.0
-Date: Tue, 12 Feb 2019 06:01:31 GMT
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Credentials: true
-Via: kong/1.0.2
-X-Kong-Upstream-Latency: 395
-X-Kong-Proxy-Latency: 26
+Content-Encoding: gzip
+Content-Type: text/html; charset=utf-8
+Date: Fri, 25 Sep 2020 09:06:45 GMT
+Etag: W/"29c7-XG+PICJmz/J+UYWt5gkKqqAUXjc"
+Kong-Cloud-Request-ID: d882b1d9b65eceeb0b0fd9c74bc90671
+Server: Cowboy
+Transfer-Encoding: chunked
+Vary: Accept-Encoding
+Via: kong/2.1.4
+X-Kong-Proxy-Latency: 285
+X-Kong-Upstream-Latency: 559
+X-Kong-Upstream-Status: 200
 
-{
-  "args": {
-    "data": "value"
-  },
-  "headers": {
-    "Accept": "*/*",
-    "Connection": "close",
-    "Host": "httpbin.org",
-    "User-Agent": "curl/7.54.0",
-    "X-Forwarded-Host": "example.com"
-  },
-  "origin": "172.18.0.1, 219.106.251.57",
-  "url": "http://example.com/get?data=value"
-}
+<!DOCTYPE html><html>...
 ```
 
-ここでは、url が `example.com` になっていることに注目しましょう。
+
 
 ### Power Shell ユーザー向け TIPS
 
@@ -314,8 +314,8 @@ $response.statuscode
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/services/example-service/plugins/ \
-    --data 'name=key-auth'
+  --url http://localhost:8001/services/example-service/plugins/ \
+  --data 'name=key-auth'
 ```
 
 1行バージョン：
@@ -332,10 +332,11 @@ curl -i -X POST --url http://localhost:8001/services/example-service/plugins/ --
 HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 324
+Content-Length: 363
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 08:24:17 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 09:11:27 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 6
 
 {
     "config": {
@@ -348,15 +349,21 @@ Server: kong/1.0.2
         "run_on_preflight": true
     },
     "consumer": null,
-    "created_at": 1549959857,
+    "created_at": 1601025087,
     "enabled": true,
-    "id": "c4a75dff-ea1c-4d52-886e-65d3daf52dd8",
+    "id": "ca2af9d6-e83e-4fc4-866b-579370397e31",
     "name": "key-auth",
+    "protocols": [
+        "grpc",
+        "grpcs",
+        "http",
+        "https"
+    ],
     "route": null,
-    "run_on": "first",
     "service": {
-        "id": "f535ce6b-28af-4d17-b9a1-ce0ef41ee8ea"
-    }
+        "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab"
+    },
+    "tags": null
 }
 ```
 
@@ -366,14 +373,14 @@ Server: kong/1.0.2
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/get?data=value \
-    --header 'Host: example.com'
+  --url http://localhost:8000/ \
+  --header 'Host: example.com'
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/get?data=value --header 'Host: example.com'
+curl -i -X GET --url http://localhost:8000/ --header 'Host: example.com'
 ```
 
 今度は以下のように認証エラーが返ってきました。
@@ -382,11 +389,12 @@ curl -i -X GET --url http://localhost:8000/get?data=value --header 'Host: exampl
 ```bash
 HTTP/1.1 401 Unauthorized
 Connection: keep-alive
-Content-Length: 41
+Content-Length: 45
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 08:27:27 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 09:14:11 GMT
+Server: kong/2.1.4
 WWW-Authenticate: Key realm="kong"
+X-Kong-Response-Latency: 11
 
 {
     "message": "No API key found in request"
@@ -397,8 +405,8 @@ WWW-Authenticate: Key realm="kong"
 
 ```bash
 curl -i -X POST \
-    --url http://localhost:8001/consumers/ \
-    --data "username=Jason"
+  --url http://localhost:8001/consumers/ \
+  --data "username=Jason"
 ```
 
 1行バージョン：
@@ -410,18 +418,20 @@ curl -i -X POST --url http://localhost:8001/consumers/ --data "username=Jason"
 Jason さんが追加されました。
 
 ```bash
-HHTTP/1.1 201 Created
+HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 105
+Content-Length: 117
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 08:29:10 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 09:16:17 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 5
 
 {
-    "created_at": 1549960150,
+    "created_at": 1601025377,
     "custom_id": null,
-    "id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf",
+    "id": "96af1e5a-45e4-419e-9dc5-18ed28aabd9b",
+    "tags": null,
     "username": "Jason"
 }
 ```
@@ -446,18 +456,21 @@ curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data 'ke
 HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 149
+Content-Length: 172
 Content-Type: application/json; charset=utf-8
-Date: Tue, 12 Feb 2019 08:30:54 GMT
-Server: kong/1.0.2
+Date: Fri, 25 Sep 2020 09:19:11 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 5
 
 {
     "consumer": {
-        "id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf"
+        "id": "96af1e5a-45e4-419e-9dc5-18ed28aabd9b"
     },
-    "created_at": 1549960254,
-    "id": "7038231a-b5a8-4a0c-b77a-903884219e49",
-    "key": "ENTER_KEY_HERE"
+    "created_at": 1601025551,
+    "id": "5c743e87-22cb-4d1d-9f0b-dc5b0fcdc198",
+    "key": "ENTER_KEY_HERE",
+    "tags": null,
+    "ttl": null
 }
 ```
 
@@ -467,15 +480,15 @@ Server: kong/1.0.2
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8000/get?data=value \
-    --header "Host: example.com" \
-    --header "apikey: ENTER_KEY_HERE"
+  --url http://localhost:8000 \
+  --header "Host: example.com" \
+  --header "apikey: ENTER_KEY_HERE"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/get?data=value --header "Host: example.com" --header "apikey: ENTER_KEY_HERE"
+curl -i -X GET --url http://localhost:8000 --header "Host: example.com" --header "apikey: ENTER_KEY_HERE"
 ```
 
 
@@ -483,35 +496,21 @@ curl -i -X GET --url http://localhost:8000/get?data=value --header "Host: exampl
 
 ```bash
 HTTP/1.1 200 OK
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Length: 475
-Content-Type: application/json
-Date: Tue, 12 Feb 2019 08:33:04 GMT
-Server: gunicorn/19.9.0
-Via: kong/1.0.2
-X-Kong-Proxy-Latency: 20
-X-Kong-Upstream-Latency: 427
+Content-Encoding: gzip
+Content-Type: text/html; charset=utf-8
+Date: Fri, 25 Sep 2020 09:22:04 GMT
+Etag: W/"29c7-XG+PICJmz/J+UYWt5gkKqqAUXjc"
+Kong-Cloud-Request-ID: 96772f7d2c07a855da0161b5556c845d
+Server: Cowboy
+Transfer-Encoding: chunked
+Vary: Accept-Encoding
+Via: kong/2.1.4
+X-Kong-Proxy-Latency: 116
+X-Kong-Upstream-Latency: 497
+X-Kong-Upstream-Status: 200
 
-{
-    "args": {
-        "data": "value"
-    },
-    "headers": {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate",
-        "Apikey": "ENTER_KEY_HERE",
-        "Connection": "close",
-        "Host": "httpbin.org",
-        "User-Agent": "HTTPie/1.0.2",
-        "X-Consumer-Id": "9b9fae66-60ca-4c5d-b8f0-6ab69a428cbf",
-        "X-Consumer-Username": "Jason",
-        "X-Forwarded-Host": "example.com"
-    },
-    "origin": "172.18.0.1, 219.106.251.57",
-    "url": "http://example.com/get?data=value"
-}
+<!DOCTYPE html><html>...
 ```
 
 Key-Auth プラグインの詳細は、[公式ドキュメント](https://docs.konghq.com/hub/kong-inc/key-auth/)をご覧ください。
