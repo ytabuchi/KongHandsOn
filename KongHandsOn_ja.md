@@ -108,13 +108,43 @@ docker run -d --name kong --network=kong-net -e "KONG_DATABASE=postgres" -e "KON
 curl -i http://localhost:8001/
 ```
 
+以下のようなレスポンスが返ってくれば成功です。
 
+```bash
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 9760
+Content-Type: application/json; charset=utf-8
+Date: Mon, 28 Sep 2020 02:34:53 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 244
 
+{
+    "configuration": {
+        "admin_acc_logs": "/usr/local/kong/logs/admin_access.log",
+        "admin_access_log": "/dev/stdout",
+        "admin_error_log": "/dev/stderr",
+        "admin_listen": [
+            "0.0.0.0:8001",
+            "0.0.0.0:8444 ssl"
+        ],
+...
+    "version": "2.1.4"
+}
+```
+
+Docker で次回以降操作する場合は、以下のコマンドを実行します。
+
+```bash
+docker start kong-database
+docker start kong
+```
 
 
 ## API の追加と確認
 
-API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートです。
+API の開発は、Admin API ポートの各種エンドポイントに POST／UPDATE／DELETE などでデータを送って行っていきます。ローカルの Docker で動かしている場合は、標準で `localhost:8001` が Admin API のポートです。（[Kong の公式ドキュメント](https://docs.konghq.com/) とは多少内容が異なりますが、より理解しやすい内容になっていると思います。）
 
 > このドキュメントでは主に Curl を使用していますが、Postman のリクエストのコレクションを
 > 
@@ -128,14 +158,14 @@ API の開発は、Admin API ポートの各種エンドポイントに POST／U
 ```bash
 curl -i -X POST \
   --url http://localhost:8001/services/ \
-  --data 'name=example-service' \
-  --data 'url=http://mockbin.org'
+  --data "name=httpbin" \
+  --data "url=http://httpbin.org/anything"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/ --data 'name=example-service' --data 'url=http://mockbin.org'
+curl -i -X POST --url http://localhost:8001/services/ --data "name=httpbin" --data "url=http://httpbin.org/anything"
 ```
 
 
@@ -147,19 +177,19 @@ Access-Control-Allow-Origin: *
 Connection: keep-alive
 Content-Length: 361
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 08:34:09 GMT
+Date: Mon, 28 Sep 2020 02:45:21 GMT
 Server: kong/2.1.4
-X-Kong-Admin-Latency: 5
+X-Kong-Admin-Latency: 8
 
 {
     "ca_certificates": null,
     "client_certificate": null,
     "connect_timeout": 60000,
-    "created_at": 1601022849,
-    "host": "mockbin.org",
-    "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab",
-    "name": "example-service",
-    "path": null,
+    "created_at": 1601261121,
+    "host": "httpbin.org",
+    "id": "cef05358-b03b-43c0-bd37-61a9fd798448",
+    "name": "httpbin",
+    "path": "/anything",
     "port": 80,
     "protocol": "http",
     "read_timeout": 60000,
@@ -167,7 +197,7 @@ X-Kong-Admin-Latency: 5
     "tags": null,
     "tls_verify": null,
     "tls_verify_depth": null,
-    "updated_at": 1601022849,
+    "updated_at": 1601261121,
     "write_timeout": 60000
 }
 ```
@@ -179,14 +209,14 @@ POST データに含める `name` が作成した Service の名前（一意で�
 
 ```bash
 curl -i -X POST \
-  --url http://localhost:8001/services/example-service/routes \
-  --data 'hosts[]=example.com'
+  --url http://localhost:8001/services/httpbin/routes \
+  --data "hosts[]=example.com"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/example-service/routes --data 'hosts[]=example.com'
+curl -i -X POST --url http://localhost:8001/services/httpbin/routes --data "hosts[]=example.com"
 ```
 
 
@@ -198,19 +228,19 @@ Access-Control-Allow-Origin: *
 Connection: keep-alive
 Content-Length: 429
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 09:00:53 GMT
+Date: Mon, 28 Sep 2020 02:47:27 GMT
 Server: kong/2.1.4
-X-Kong-Admin-Latency: 6
+X-Kong-Admin-Latency: 7
 
 {
-    "created_at": 1601024453,
+    "created_at": 1601261247,
     "destinations": null,
     "headers": null,
     "hosts": [
         "example.com"
     ],
     "https_redirect_status_code": 426,
-    "id": "be9ad0a3-2beb-4019-8deb-3686ee60d39c",
+    "id": "0f826077-5386-4b32-a787-1cfc3d23b2ab",
     "methods": null,
     "name": null,
     "path_handling": "v0",
@@ -222,13 +252,13 @@ X-Kong-Admin-Latency: 6
     ],
     "regex_priority": 0,
     "service": {
-        "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab"
+        "id": "cef05358-b03b-43c0-bd37-61a9fd798448"
     },
     "snis": null,
     "sources": null,
     "strip_path": true,
     "tags": null,
-    "updated_at": 1601024453
+    "updated_at": 1601261247
 }
 ```
 
@@ -238,35 +268,51 @@ Routes は指定した Host がリクエストヘッダーにあった場合に�
 
 ```bash
 curl -i -X GET \
-  --url http://localhost:8000/ \
-  --header 'Host: example.com'
+  --url http://localhost:8000/?arg=value \
+  --header "Host: example.com"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/ --header 'Host: example.com'
+curl -i -X GET --url http://localhost:8000/?arg=value --header "Host: example.com"
 ```
 
 次のようなレスポンスが返ってきて、正しく転送されていることがわかります。
 
 ```bash
 HTTP/1.1 200 OK
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Encoding: gzip
-Content-Type: text/html; charset=utf-8
-Date: Fri, 25 Sep 2020 09:06:45 GMT
-Etag: W/"29c7-XG+PICJmz/J+UYWt5gkKqqAUXjc"
-Kong-Cloud-Request-ID: d882b1d9b65eceeb0b0fd9c74bc90671
-Server: Cowboy
-Transfer-Encoding: chunked
-Vary: Accept-Encoding
+Content-Length: 437
+Content-Type: application/json
+Date: Mon, 28 Sep 2020 02:48:30 GMT
+Server: gunicorn/19.9.0
 Via: kong/2.1.4
-X-Kong-Proxy-Latency: 285
-X-Kong-Upstream-Latency: 559
-X-Kong-Upstream-Status: 200
+X-Kong-Proxy-Latency: 338
+X-Kong-Upstream-Latency: 438
 
-<!DOCTYPE html><html>...
+{
+    "args": {
+        "arg": "value"
+    },
+    "data": "",
+    "files": {},
+    "form": {},
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate",
+        "Host": "httpbin.org",
+        "User-Agent": "HTTPie/2.2.0",
+        "X-Amzn-Trace-Id": "Root=X-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "X-Forwarded-Host": "example.com"
+    },
+    "json": null,
+    "method": "GET",
+    "origin": "172.18.0.1, XXX.XXX.XXX.XXX",
+    "url": "http://example.com/anything"
+}
 ```
 
 
@@ -297,7 +343,7 @@ $response.Content
 また、Service を追加する時は
 
 ```powershell
-$response = iwr -method post -uri "http://localhost:8001/services" -body 'name=example-service&url=http://httpbin.org'
+$response = iwr -method post -uri "http://localhost:8001/services" -body 'name=httpbin&url=http://httpbin.org/anything'
 $response.statuscode
 ```
 
@@ -314,14 +360,14 @@ $response.statuscode
 
 ```bash
 curl -i -X POST \
-  --url http://localhost:8001/services/example-service/plugins/ \
-  --data 'name=key-auth'
+  --url http://localhost:8001/services/httpbin/plugins/ \
+  --data "name=key-auth"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/example-service/plugins/ --data 'name=key-auth'
+curl -i -X POST --url http://localhost:8001/services/httpbin/plugins/ --data "name=key-auth"
 ```
 
 > `/test/plugins/` として、API 別に Plugin を追加することも可能ですし、グローバルに追加することも可能です。
@@ -334,9 +380,9 @@ Access-Control-Allow-Origin: *
 Connection: keep-alive
 Content-Length: 363
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 09:11:27 GMT
+Date: Mon, 28 Sep 2020 02:50:43 GMT
 Server: kong/2.1.4
-X-Kong-Admin-Latency: 6
+X-Kong-Admin-Latency: 8
 
 {
     "config": {
@@ -349,9 +395,9 @@ X-Kong-Admin-Latency: 6
         "run_on_preflight": true
     },
     "consumer": null,
-    "created_at": 1601025087,
+    "created_at": 1601261443,
     "enabled": true,
-    "id": "ca2af9d6-e83e-4fc4-866b-579370397e31",
+    "id": "493d8063-088c-48ad-918b-afaa08f35a26",
     "name": "key-auth",
     "protocols": [
         "grpc",
@@ -361,7 +407,7 @@ X-Kong-Admin-Latency: 6
     ],
     "route": null,
     "service": {
-        "id": "8bd4fae3-4878-4cdc-9feb-4b9369373bab"
+        "id": "cef05358-b03b-43c0-bd37-61a9fd798448"
     },
     "tags": null
 }
@@ -373,14 +419,14 @@ X-Kong-Admin-Latency: 6
 
 ```bash
 curl -i -X GET \
-  --url http://localhost:8000/ \
-  --header 'Host: example.com'
+  --url http://localhost:8000/?arg=value \
+  --header "Host: example.com"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000/ --header 'Host: example.com'
+curl -i -X GET --url http://localhost:8000/?arg=value --header "Host: example.com"
 ```
 
 今度は以下のように認証エラーが返ってきました。
@@ -391,7 +437,7 @@ HTTP/1.1 401 Unauthorized
 Connection: keep-alive
 Content-Length: 45
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 09:14:11 GMT
+Date: Mon, 28 Sep 2020 02:51:26 GMT
 Server: kong/2.1.4
 WWW-Authenticate: Key realm="kong"
 X-Kong-Response-Latency: 11
@@ -415,7 +461,7 @@ curl -i -X POST \
 curl -i -X POST --url http://localhost:8001/consumers/ --data "username=Jason"
 ```
 
-Jason さんが追加されました。
+次のようなレスポンスが返ってくれば成功です。
 
 ```bash
 HTTP/1.1 201 Created
@@ -423,14 +469,14 @@ Access-Control-Allow-Origin: *
 Connection: keep-alive
 Content-Length: 117
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 09:16:17 GMT
+Date: Mon, 28 Sep 2020 02:53:21 GMT
 Server: kong/2.1.4
-X-Kong-Admin-Latency: 5
+X-Kong-Admin-Latency: 7
 
 {
-    "created_at": 1601025377,
+    "created_at": 1601261601,
     "custom_id": null,
-    "id": "96af1e5a-45e4-419e-9dc5-18ed28aabd9b",
+    "id": "069701cd-a87e-414e-94a6-a84f17b34efe",
     "tags": null,
     "username": "Jason"
 }
@@ -441,14 +487,16 @@ X-Kong-Admin-Latency: 5
 ```bash
 curl -i -X POST \
   --url http://localhost:8001/consumers/Jason/key-auth/ \
-  --data 'key=ENTER_KEY_HERE'
+  --data "key=ENTER_KEY_HERE"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data 'key=ENTER_KEY_HERE'
+curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data "key=ENTER_KEY_HERE"
 ```
+
+> key をランダム生成する場合は、`--data ''` と、実データなしでリクエストを送ります。
 
 次のような json が返ってきて、`id` と `key` が発行されたことがわかります。
 
@@ -458,16 +506,16 @@ Access-Control-Allow-Origin: *
 Connection: keep-alive
 Content-Length: 172
 Content-Type: application/json; charset=utf-8
-Date: Fri, 25 Sep 2020 09:19:11 GMT
+Date: Mon, 28 Sep 2020 02:53:53 GMT
 Server: kong/2.1.4
-X-Kong-Admin-Latency: 5
+X-Kong-Admin-Latency: 6
 
 {
     "consumer": {
-        "id": "96af1e5a-45e4-419e-9dc5-18ed28aabd9b"
+        "id": "069701cd-a87e-414e-94a6-a84f17b34efe"
     },
-    "created_at": 1601025551,
-    "id": "5c743e87-22cb-4d1d-9f0b-dc5b0fcdc198",
+    "created_at": 1601261633,
+    "id": "fe0accf3-9676-4fa1-9d72-90f7c7463849",
     "key": "ENTER_KEY_HERE",
     "tags": null,
     "ttl": null
@@ -476,11 +524,11 @@ X-Kong-Admin-Latency: 5
 
 これで、この apikey で最初の API にアクセスできるようになりました。
 
-> key をランダム生成する場合は、`--data ''` と、実データなしでリクエストを送ります。
+
 
 ```bash
 curl -i -X GET \
-  --url http://localhost:8000 \
+  --url http://localhost:8000/?arg=value \
   --header "Host: example.com" \
   --header "apikey: ENTER_KEY_HERE"
 ```
@@ -488,29 +536,49 @@ curl -i -X GET \
 1行バージョン：
 
 ```bash
-curl -i -X GET --url http://localhost:8000 --header "Host: example.com" --header "apikey: ENTER_KEY_HERE"
+curl -i -X GET --url http://localhost:8000/?arg=value --header "Host: example.com" --header "apikey: ENTER_KEY_HERE"
 ```
 
 
-次の結果が返ってきて、無事アクセスできたことが分かります。
+次のようなレスポンスが返ってくれば成功です。
 
 ```bash
 HTTP/1.1 200 OK
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: *
 Connection: keep-alive
-Content-Encoding: gzip
-Content-Type: text/html; charset=utf-8
-Date: Fri, 25 Sep 2020 09:22:04 GMT
-Etag: W/"29c7-XG+PICJmz/J+UYWt5gkKqqAUXjc"
-Kong-Cloud-Request-ID: 96772f7d2c07a855da0161b5556c845d
-Server: Cowboy
-Transfer-Encoding: chunked
-Vary: Accept-Encoding
+Content-Length: 673
+Content-Type: application/json
+Date: Mon, 28 Sep 2020 03:08:12 GMT
+Server: gunicorn/19.9.0
 Via: kong/2.1.4
-X-Kong-Proxy-Latency: 116
-X-Kong-Upstream-Latency: 497
-X-Kong-Upstream-Status: 200
+X-Kong-Proxy-Latency: 237
+X-Kong-Upstream-Latency: 681
 
-<!DOCTYPE html><html>...
+{
+    "args": {
+        "arg": "value"
+    },
+    "data": "",
+    "files": {},
+    "form": {},
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate",
+        "Apikey": "ENTER_KEY_HERE",
+        "Host": "httpbin.org",
+        "User-Agent": "HTTPie/2.2.0",
+        "X-Amzn-Trace-Id": "Root=X-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "X-Consumer-Id": "069701cd-a87e-414e-94a6-a84f17b34efe",
+        "X-Consumer-Username": "Jason",
+        "X-Credential-Identifier": "5514e8fb-bd95-49ae-920e-0cf283a7d2b7",
+        "X-Forwarded-Host": "example.com"
+    },
+    "json": null,
+    "method": "GET",
+    "origin": "172.18.0.1, XXX.XXX.XXX.XXX",
+    "url": "http://example.com/anything?arg=value"
+}
 ```
 
 Key-Auth プラグインの詳細は、[公式ドキュメント](https://docs.konghq.com/hub/kong-inc/key-auth/)をご覧ください。
@@ -519,24 +587,73 @@ Key-Auth プラグインの詳細は、[公式ドキュメント](https://docs.k
 
 
 
-## おまけ：レートリミット（まだアップデートしていません。すみません。）
+## おまけ：レートリミット
 
-時間に余裕があれば、Rate Limit を掛けてみましょう。
+時間に余裕があれば、Rate Limit を掛けてみましょう。Rate Limit は秒、分、時間、日、月、または年などに HTTP リクエストの数を制限するプラグインです。Service や Route に認証プラグインがない場合は、クライアント　IP　アドレスが使用されます。認証プラグインが構成されている場合は Consumer が使用されます。詳細はドキュメント [Rate Limiting plugin \| Kong](https://docs.konghq.com/hub/kong-inc/rate-limiting/) を参照してください。
 
-Plugin 名は `rate-limiting` で今回は秒単位で 1回、分単位で 5回の制限を掛けてみます。
+作成していた `httpbin` サービスにプラグインを追加しましょう。Plugin 名は `rate-limiting` で今回は秒単位で 1回、分単位で 5回の制限を掛けてみます。
 
 ```bash
-curl -i -X POST \
-    --url http://localhost:8001/services/test/plugins \
-    --data "name=rate-limiting" \
-    --data "config.second=1" \
-    --data "config.minute=5"
+curl -X POST http://localhost:8001/services/httpbin/plugins \
+  --data "name=rate-limiting"  \
+  --data "config.second=1" \
+  --data "config.minute=5"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X POST --url http://localhost:8001/services/test/plugins --data "name=rate-limiting" --data "config.second=1" --data "config.minute=5"
+curl -X POST http://localhost:8001/services/httpbin/plugins  --data "name=rate-limiting" --data "config.second=1" --data "config.minute=5"
+```
+
+次のようなレスポンスが返ってくれば成功です。
+
+```bash
+HTTP/1.1 201 Created
+Access-Control-Allow-Origin: *
+Connection: keep-alive
+Content-Length: 537
+Content-Type: application/json; charset=utf-8
+Date: Wed, 30 Sep 2020 01:40:45 GMT
+Server: kong/2.1.4
+X-Kong-Admin-Latency: 7
+
+{
+    "config": {
+        "day": null,
+        "fault_tolerant": true,
+        "header_name": null,
+        "hide_client_headers": false,
+        "hour": null,
+        "limit_by": "consumer",
+        "minute": 5,
+        "month": null,
+        "policy": "cluster",
+        "redis_database": 0,
+        "redis_host": null,
+        "redis_password": null,
+        "redis_port": 6379,
+        "redis_timeout": 2000,
+        "second": 1,
+        "year": null
+    },
+    "consumer": null,
+    "created_at": 1601430045,
+    "enabled": true,
+    "id": "b985cfb7-27d6-47b4-8366-b3ea434ba7ff",
+    "name": "rate-limiting",
+    "protocols": [
+        "grpc",
+        "grpcs",
+        "http",
+        "https"
+    ],
+    "route": null,
+    "service": {
+        "id": "cef05358-b03b-43c0-bd37-61a9fd798448"
+    },
+    "tags": null
+}
 ```
 
 
@@ -544,31 +661,39 @@ curl -i -X POST --url http://localhost:8001/services/test/plugins --data "name=r
 
 ```bash
 curl -i -X GET \
-    --url "http://localhost:8000/test/get?data=value1&data=value2" \
-    --header "apikey: ENTER_KEY_HERE"
+  --url "http://localhost:8000?arg=value" \
+  --header "apikey: ENTER_KEY_HERE" \
+  --header "host: example.com"
 ```
 
 1行バージョン：
 
 ```bash
-curl -i -X GET --url "http://localhost:8000/test/get?data=value1&data=value2" --header "apikey: ENTER_KEY_HERE"
+curl -i -X GET --url "http://localhost:8000?arg=value" --header "apikey: ENTER_KEY_HERE" --header "host: example.com"
 ```
 
 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 2回アクセスできることが分かります。
 
 ```bash
-HTTP/1.1 429
-Date: Thu, 08 Mar 2018 07:06:06 GMT
+HTTP/1.1 429 Too Many Requests
+Date: Wed, 30 Sep 2020 01:45:36 GMT
 Content-Type: application/json; charset=utf-8
-Transfer-Encoding: chunked
 Connection: keep-alive
-X-RateLimit-Limit-second: 1
-X-RateLimit-Remaining-second: 0
-X-RateLimit-Limit-minute: 5
-X-RateLimit-Remaining-minute: 2
-Server: kong/0.12.2
+Retry-After: 1
+Content-Length: 41
+X-RateLimit-Limit-Second: 1
+X-RateLimit-Remaining-Second: 0
+X-RateLimit-Remaining-Minute: 4
+RateLimit-Limit: 1
+RateLimit-Remaining: 0
+X-RateLimit-Limit-Minute: 5
+RateLimit-Reset: 1
+X-Kong-Response-Latency: 4
+Server: kong/2.1.4
 
-{"message":"API rate limit exceeded"}
+{
+  "message":"API rate limit exceeded"
+}
 ```
 
 `consumer_id` などと組み合わせることで柔軟な制限を指定できます。
@@ -580,9 +705,9 @@ Server: kong/0.12.2
 
 本日一部使用した Kong の Admin API の一覧は
 
-[Admin API \- v0\.12\.x \| Kong \- Open\-Source API Management and Microservice Management](https://getkong.org/docs/0.12.x/admin-api/)
+[Admin API \- v2\.1\.x \| Kong \- Open\-Source API Management and Microservice Management](https://docs.konghq.com/2.1.x/admin-api/)
 
-に記載されています。
+に記載されています。（リンク先のドキュメントが古い場合は右上から最新バージョンを参照してください。）
 
 例えば、以下のようなコマンドが用意されています。
 
@@ -590,29 +715,29 @@ Server: kong/0.12.2
 
 ```bash
 curl -i -X GET \
-    --url http://localhost:8001/services/
+  --url http://localhost:8001/services/
 ```
 
 ### 作成した API の削除
 
 ```bash
 curl -i -X DELETE \
-    --url http://localhost:8001/services/{API}
+  --url http://localhost:8001/services/{API}
 ```
 
 ### Plugin の変更
 
 ```bash
 curl -i -X PATCH \
-    --url http://localhost:8001/services/{API}/plugins/{id} \
-    --data "config.{property}"
+  --url http://localhost:8001/services/{API}/plugins/{id} \
+  --data "config.{property}"
 ```
 
 などです。非常に簡単に操作できる API Management の Kong をぜひ触ってみてください。Kong についての詳細は
 
-- [Kong 本家](https://konghq.com/kong-community-edition/)
-- [エクセルソフト Kong ページ](https://www.xlsoft.com/jp/products/kong/index.html?r=ytgh)
-- [エクセルソフトブログ Kong タグ](http://www.xlsoft.com/jp/blog/blog/tag/kong/?r=ytgh)
+- [Kong 本家](https://konghq.com/kong/)
+- [エクセルソフト Kong ページ](https://www.xlsoft.com/jp/products/kong/index.html?utm_source=external&utm_medium=github&utm_campaign=ytabuchi_kong-handson)
+- [エクセルソフトブログ Kong タグ](http://www.xlsoft.com/jp/blog/blog/tag/kong/)
 
 をご覧ください。
 
