@@ -649,7 +649,7 @@ curl -i -X POST http://localhost:8001/services/httpbin/plugins  --data "name=rat
 
 次のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Date: Wed, 23 Mar 2022 02:45:51 GMT
 Content-Type: application/json; charset=utf-8
