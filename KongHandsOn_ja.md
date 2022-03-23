@@ -120,7 +120,7 @@ curl -i -X GET --url http://localhost:8001/services
 
 以下のようなステータスコード 200 のレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 200 OK
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -134,8 +134,8 @@ X-Kong-Admin-Request-ID: HhwSxGvLHi0akP5MhAjInq01oNPBGmWl
 vary: Origin
 
 {
-    "data": [],
-    "next": null
+  "data": [],
+  "next": null
 }
 ```
 
@@ -188,7 +188,7 @@ curl -i -X POST --url http://localhost:8001/services/ --data "name=httpbin" --da
 
 以下のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -202,24 +202,24 @@ X-Kong-Admin-Request-ID: KFtl34KAroolt1JheY7oly42JJ89hlV7
 vary: Origin
 
 {
-    "ca_certificates": null,
-    "client_certificate": null,
-    "connect_timeout": 60000,
-    "created_at": 1648001354,
-    "enabled": true,
-    "host": "httpbin.org",
-    "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33",
-    "name": "httpbin",
-    "path": "/anything",
-    "port": 80,
-    "protocol": "http",
-    "read_timeout": 60000,
-    "retries": 5,
-    "tags": null,
-    "tls_verify": null,
-    "tls_verify_depth": null,
-    "updated_at": 1648001354,
-    "write_timeout": 60000
+  "ca_certificates": null,
+  "client_certificate": null,
+  "connect_timeout": 60000,
+  "created_at": 1648001354,
+  "enabled": true,
+  "host": "httpbin.org",
+  "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33",
+  "name": "httpbin",
+  "path": "/anything",
+  "port": 80,
+  "protocol": "http",
+  "read_timeout": 60000,
+  "retries": 5,
+  "tags": null,
+  "tls_verify": null,
+  "tls_verify_depth": null,
+  "updated_at": 1648001354,
+  "write_timeout": 60000
 }
 ```
 
@@ -243,7 +243,7 @@ curl -i -X POST --url http://localhost:8001/services/httpbin/routes --data "host
 
 次のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -257,34 +257,34 @@ X-Kong-Admin-Request-ID: pPuOuDPcwPkvYXpOTGWgke7va65D5bfv
 vary: Origin
 
 {
-    "created_at": 1648001484,
-    "destinations": null,
-    "headers": null,
-    "hosts": [
-        "example.com"
-    ],
-    "https_redirect_status_code": 426,
-    "id": "e5fb4ac5-3cbe-45ca-9368-6be0672ec6fc",
-    "methods": null,
-    "name": null,
-    "path_handling": "v0",
-    "paths": null,
-    "preserve_host": false,
-    "protocols": [
-        "http",
-        "https"
-    ],
-    "regex_priority": 0,
-    "request_buffering": true,
-    "response_buffering": true,
-    "service": {
-        "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33"
-    },
-    "snis": null,
-    "sources": null,
-    "strip_path": true,
-    "tags": null,
-    "updated_at": 1648001484
+  "created_at": 1648001484,
+  "destinations": null,
+  "headers": null,
+  "hosts": [
+    "example.com"
+  ],
+  "https_redirect_status_code": 426,
+  "id": "e5fb4ac5-3cbe-45ca-9368-6be0672ec6fc",
+  "methods": null,
+  "name": null,
+  "path_handling": "v0",
+  "paths": null,
+  "preserve_host": false,
+  "protocols": [
+    "http",
+    "https"
+  ],
+  "regex_priority": 0,
+  "request_buffering": true,
+  "response_buffering": true,
+  "service": {
+    "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33"
+  },
+  "snis": null,
+  "sources": null,
+  "strip_path": true,
+  "tags": null,
+  "updated_at": 1648001484
 }
 ```
 
@@ -306,7 +306,7 @@ curl -i -X GET --url http://localhost:8000/?arg=value --header "host: example.co
 
 次のようなレスポンスが返ってきて、正しく転送されていることがわかります。
 
-```sh
+```json
 HTTP/1.1 200 OK
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: *
@@ -320,25 +320,24 @@ X-Kong-Proxy-Latency: 164
 X-Kong-Upstream-Latency: 535
 
 {
-    "args": {
-        "arg": "value"
-    },
-    "data": "",
-    "files": {},
-    "form": {},
-    "headers": {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate",
-        "Host": "httpbin.org",
-        "User-Agent": "HTTPie/1.0.3",
-        "X-Amzn-Trace-Id": "Root=1-623a8211-37654a0b1b15b9a611a42b7d",
-        "X-Forwarded-Host": "example.com",
-        "X-Forwarded-Path": "/"
-    },
-    "json": null,
-    "method": "GET",
-    "origin": "172.20.0.1, 193.119.157.231",
-    "url": "http://example.com/anything?arg=value"
+  "args": {
+    "arg": "value"
+  },
+  "data": "",
+  "files": {},
+  "form": {},
+  "headers": {
+  "Accept": "*/*",
+  "Host": "httpbin.org",
+  "User-Agent": "curl/7.68.0",
+    "X-Amzn-Trace-Id": "Root=1-XXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXX",
+    "X-Forwarded-Host": "example.com",
+    "X-Forwarded-Path": "/"
+  },
+  "json": null,
+  "method": "GET",
+  "origin": "172.20.0.1, XXX.XXX.XXX.XXX",
+  "url": "http://example.com/anything?arg=value"
 }
 ```
 
@@ -401,7 +400,7 @@ curl -i -X POST --url http://localhost:8001/services/httpbin/plugins/ --data "na
 
 次のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -416,33 +415,33 @@ vary: Origin
 vary: Origin
 
 {
-    "config": {
-        "anonymous": null,
-        "hide_credentials": false,
-        "key_in_body": false,
-        "key_in_header": true,
-        "key_in_query": true,
-        "key_names": [
-            "apikey"
-        ],
-        "run_on_preflight": true
-    },
-    "consumer": null,
-    "created_at": 1648001626,
-    "enabled": true,
-    "id": "88065c94-3fd4-40e4-a91f-869a8951d16e",
-    "name": "key-auth",
-    "protocols": [
-        "grpc",
-        "grpcs",
-        "http",
-        "https"
+  "config": {
+    "anonymous": null,
+    "hide_credentials": false,
+    "key_in_body": false,
+    "key_in_header": true,
+    "key_in_query": true,
+    "key_names": [
+      "apikey"
     ],
-    "route": null,
-    "service": {
-        "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33"
-    },
-    "tags": null
+    "run_on_preflight": true
+  },
+  "consumer": null,
+  "created_at": 1648001626,
+  "enabled": true,
+  "id": "88065c94-3fd4-40e4-a91f-869a8951d16e",
+  "name": "key-auth",
+  "protocols": [
+    "grpc",
+    "grpcs",
+    "http",
+    "https"
+  ],
+  "route": null,
+  "service": {
+    "id": "e90f3a07-58bc-4d5c-a25b-1c0fc1c46d33"
+  },
+  "tags": null
 }
 ```
 
@@ -465,7 +464,7 @@ curl -i -X GET --url http://localhost:8000/?arg=value --header "host: example.co
 今度は以下のように認証エラーが返ってきました。
 
 
-```sh
+```json
 HTTP/1.1 401 Unauthorized
 Connection: keep-alive
 Content-Length: 45
@@ -476,7 +475,7 @@ WWW-Authenticate: Key realm="kong"
 X-Kong-Response-Latency: 41
 
 {
-    "message": "No API key found in request"
+  "message": "No API key found in request"
 }
 ```
 
@@ -496,7 +495,7 @@ curl -i -X POST --url http://localhost:8001/consumers/ --data "username=Jason"
 
 次のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -510,13 +509,13 @@ X-Kong-Admin-Request-ID: Ih9bVG2WnfCmuCCjD6ogegqisbWfpnp0
 vary: Origin
 
 {
-    "created_at": 1648001720,
-    "custom_id": null,
-    "id": "2ff17742-0c27-45ee-922f-5a01ca3313b7",
-    "tags": null,
-    "type": 0,
-    "username": "Jason",
-    "username_lower": "jason"
+  "created_at": 1648001720,
+  "custom_id": null,
+  "id": "2ff17742-0c27-45ee-922f-5a01ca3313b7",
+  "tags": null,
+  "type": 0,
+  "username": "Jason",
+  "username_lower": "jason"
 }
 ```
 
@@ -538,7 +537,7 @@ curl -i -X POST --url http://localhost:8001/consumers/Jason/key-auth/ --data "ke
 
 次のような json が返ってきて、`id` と `key` が発行されたことがわかります。
 
-```sh
+```json
 HTTP/1.1 201 Created
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: http://localhost:8002
@@ -553,14 +552,14 @@ vary: Origin
 vary: Origin
 
 {
-    "consumer": {
-        "id": "2ff17742-0c27-45ee-922f-5a01ca3313b7"
-    },
-    "created_at": 1648001946,
-    "id": "69683811-8805-41d9-b078-0db948527b2b",
-    "key": "ENTER_KEY_HERE",
-    "tags": null,
-    "ttl": null
+  "consumer": {
+    "id": "2ff17742-0c27-45ee-922f-5a01ca3313b7"
+  },
+  "created_at": 1648001946,
+  "id": "69683811-8805-41d9-b078-0db948527b2b",
+  "key": "ENTER_KEY_HERE",
+  "tags": null,
+  "ttl": null
 }
 ```
 
@@ -584,7 +583,7 @@ curl -i -X GET --url http://localhost:8000/?arg=value --header "Host: example.co
 
 次のようなレスポンスが返ってくれば成功です。
 
-```sh
+```json
 HTTP/1.1 200 OK
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: *
@@ -598,29 +597,28 @@ X-Kong-Proxy-Latency: 171
 X-Kong-Upstream-Latency: 431
 
 {
-    "args": {
-        "arg": "value"
-    },
-    "data": "",
-    "files": {},
-    "form": {},
-    "headers": {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate",
-        "Apikey": "ENTER_KEY_HERE",
-        "Host": "httpbin.org",
-        "User-Agent": "HTTPie/1.0.3",
-        "X-Amzn-Trace-Id": "Root=1-623a83c4-33e46eb400424aae5a49f12e",
-        "X-Consumer-Id": "2ff17742-0c27-45ee-922f-5a01ca3313b7",
-        "X-Consumer-Username": "Jason",
-        "X-Credential-Identifier": "69683811-8805-41d9-b078-0db948527b2b",
-        "X-Forwarded-Host": "example.com",
-        "X-Forwarded-Path": "/"
-    },
-    "json": null,
-    "method": "GET",
-    "origin": "172.20.0.1, 193.119.157.231",
-    "url": "http://example.com/anything?arg=value"
+  "args": {
+    "arg": "value"
+  },
+  "data": "",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "*/*",
+    "Apikey": "ENTER_KEY_HERE",
+    "Host": "httpbin.org",
+    "User-Agent": "curl/7.68.0",
+    "X-Amzn-Trace-Id": "Root=1-XXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXX",
+    "X-Consumer-Id": "2ff17742-0c27-45ee-922f-5a01ca3313b7",
+    "X-Consumer-Username": "Jason",
+    "X-Credential-Identifier": "69683811-8805-41d9-b078-0db948527b2b",
+    "X-Forwarded-Host": "example.com",
+    "X-Forwarded-Path": "/"
+  },
+  "json": null,
+  "method": "GET",
+  "origin": "172.20.0.1, XXX.XXX.XXX.XXX",
+  "url": "http://example.com/anything?arg=value"
 }
 ```
 
@@ -721,13 +719,11 @@ curl -i -X GET \
 
 ```sh
 curl -i -X GET --url "http://localhost:8000?arg=value" --header "apikey: ENTER_KEY_HERE" --header "host: example.com"
-curl -i -X GET --url "http://localhost:8000?arg=value" --header "apikey: ENTER_KEY_HERE" --header "host: example.com"
-
 ```
 
 1秒間に 2回アクセスすると、次のような JSON が返ってきて、1秒内の制限に引っ掛かっていますが、1分内には残り 4回アクセスできることが分かります。
 
-```sh
+```json
 HTTP/1.1 429 Too Many Requests
 Date: Wed, 23 Mar 2022 02:50:19 GMT
 Content-Type: application/json; charset=utf-8
